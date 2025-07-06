@@ -1,10 +1,9 @@
+
 import streamlit as st
 import pandas as pd
 
 from appdeanalisisfundamentalytecnica2 import (
     analizar_ratios_financieros,
-    analizar_ingresos_y_ganancias,
-    analizar_deuda,
     analizar_tecnico_diario,
     analizar_tecnico_4h,
     analizar_tecnico_1h,
@@ -18,8 +17,6 @@ tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
 st.sidebar.title("Opciones de Análisis")
 do_ratios = st.sidebar.checkbox("Ratios Financieros", value=True)
-do_ingresos = st.sidebar.checkbox("Ingresos y Ganancias")
-do_deuda = st.sidebar.checkbox("Deuda")
 do_diario = st.sidebar.checkbox("Análisis Técnico Diario", value=True)
 do_4h = st.sidebar.checkbox("Análisis Técnico 4H")
 do_1h = st.sidebar.checkbox("Análisis Técnico 1H")
@@ -32,16 +29,6 @@ if st.button("🔎 Analizar"):
             st.subheader("📐 Ratios Financieros")
             df_ratios = analizar_ratios_financieros(tickers)
             st.dataframe(df_ratios)
-
-        if do_ingresos:
-            st.subheader("📈 Ingresos y Ganancias")
-            df_ingresos = analizar_ingresos_y_ganancias(tickers)
-            st.dataframe(df_ingresos)
-
-        if do_deuda:
-            st.subheader("💰 Análisis de Deuda")
-            df_deuda = analizar_deuda(tickers)
-            st.dataframe(df_deuda)
 
         if do_diario:
             st.subheader("📊 Análisis Técnico Diario")
