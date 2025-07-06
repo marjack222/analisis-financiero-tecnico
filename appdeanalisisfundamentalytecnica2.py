@@ -78,11 +78,16 @@ def analizar_tecnico(tickers, intervalo, nombre_intervalo):
                 })
                 continue
 
+            # Asegurarse de que 'Close' sea una Serie 1D
+            close_series = df['Close']
+            if isinstance(close_series, pd.DataFrame):
+                close_series = close_series.squeeze()
+
             # Indicadores
-            rsi = ta.momentum.RSIIndicator(df['Close']).rsi()
-            macd = ta.trend.MACD(df['Close']).macd_diff()
-            sma20 = ta.trend.SMAIndicator(df['Close'], window=20).sma_indicator()
-            sma50 = ta.trend.SMAIndicator(df['Close'], window=50).sma_indicator()
+            rsi = ta.momentum.RSIIndicator(close_series).rsi()
+            macd = ta.trend.MACD(close_series).macd_diff()
+            sma20 = ta.trend.SMAIndicator(close_series, window=20).sma_indicator()
+            sma50 = ta.trend.SMAIndicator(close_series, window=50).sma_indicator()
 
             # Últimos valores
             ult_rsi = rsi.iloc[-1]
