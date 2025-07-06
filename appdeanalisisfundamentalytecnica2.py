@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -35,9 +34,9 @@ def analizar_ratios_financieros(tickers):
         except Exception as e:
             resultados.append({
                 "Ticker": ticker,
-                "P/E": None, "P/E interpretación": "Error",
-                "P/B": None, "P/B interpretación": "Error",
-                "P/S": None, "P/S interpretación": "Error",
+                "P/E": None, "P/E interpretación": f"Error: {e}",
+                "P/B": None, "P/B interpretación": f"Error: {e}",
+                "P/S": None, "P/S interpretación": f"Error: {e}",
                 "Sugerencia": "Error"
             })
 
@@ -73,7 +72,10 @@ def analizar_tecnico(tickers, intervalo, nombre_intervalo):
         try:
             df = yf.download(ticker, period="60d", interval=intervalo, progress=False)
             if df.empty or len(df) < 50:
-                resultados.append({"Ticker": ticker, f"Sugerencia técnica {nombre_intervalo}": "Datos insuficientes"})
+                resultados.append({
+                    "Ticker": ticker,
+                    f"Sugerencia técnica {nombre_intervalo}": "Datos insuficientes"
+                })
                 continue
 
             # Indicadores
@@ -110,13 +112,13 @@ def analizar_tecnico(tickers, intervalo, nombre_intervalo):
                 f"SMA20 > SMA50 {nombre_intervalo}": ult_sma20 > ult_sma50,
                 f"Sugerencia técnica {nombre_intervalo}": recomendacion
             })
-        except:
+        except Exception as e:
             resultados.append({
                 "Ticker": ticker,
                 f"RSI {nombre_intervalo}": None,
                 f"MACD {nombre_intervalo}": None,
                 f"SMA20 > SMA50 {nombre_intervalo}": None,
-                f"Sugerencia técnica {nombre_intervalo}": "Error"
+                f"Sugerencia técnica {nombre_intervalo}": f"Error: {e}"
             })
 
     return pd.DataFrame(resultados)
@@ -129,3 +131,54 @@ def analizar_tecnico_4h(tickers):
 
 def analizar_tecnico_1h(tickers):
     return analizar_tecnico(tickers, "30m", "1H")
+
+# ===============================
+# FUNCIONES DE PRESENTACIÓN Y CONSOLIDACIÓN
+# ===============================
+
+def mostrar_resultados_tecnicos(tickers):
+    print("=== Análisis Técnico Diario ===")
+    print(analizar_tecnico_diario(tickers).to_string(index=False))
+    print("\n=== Análisis Técnico 4H ===")
+    print(analizar_tecnico_4h(tickers).to_string(index=False))
+    print("\n=== Análisis Técnico 1H ===")
+    print(analizar_tecnico_1h(tickers).to_string(index=False))
+
+def mostrar_resultados_fundamentales(tickers):
+    print("=== Análisis Fundamental ===")
+    print(analizar_ratios_financieros(tickers).to_string(index=False))
+
+def analizar_y_mostrar_todo(tickers):
+    """Función principal para mostrar análisis fundamental y técnico de una lista de tickers."""
+    mostrar_resultados_fundamentales(tickers)
+    print("\n")
+    mostrar_resultados_tecnicos(tickers)
+
+def exportar_resultados_tecnicos_csv(tickers, archivo_base="tecnico"):
+    """Guarda los resultados técnicos en archivos CSV separados por intervalo."""
+    diario = analizar_tecnico_diario(tickers)
+    cuatroh = analizar_tecnico_4h(tickers)
+    unah = analizar_tecnico_1h(tickers)
+    diario.to_csv(f"{archivo_base}_diario.csv", index=False)
+    cuatroh.to_csv(f"{archivo_base}_4h.csv", index=False)
+    unah.to_csv(f"{archivo_base}_1h.csv", index=False)
+
+def exportar_resultados_fundamentales_csv(tickers, archivo="fundamental.csv"):
+    """Guarda los resultados fundamentales en un archivo CSV."""
+    df = analizar_ratios_financieros(tickers)
+    df.to_csv(archivo, index=False)
+
+# ===============================
+# USO DESDE LÍNEA DE COMANDOS
+# ===============================
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        tickers = sys.argv[1:]
+        analizar_y_mostrar_todo(tickers)
+        exportar_resultados_tecnicos_csv(tickers)
+        exportar_resultados_fundamentales_csv(tickers)
+        print("\nResultados exportados a CSV (tecnico_diario.csv, tecnico_4h.csv, tecnico_1h.csv, fundamental.csv)")
+    else:
+        print("Por favor, ingresa uno o más tickers como argumentos.")
