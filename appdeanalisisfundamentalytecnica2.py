@@ -8,7 +8,7 @@ import ta
 # ===============================
 
 def analizar_ratios_financieros(tickers):
-    """Analiza ratios P/E, P/B y P/S con interpretación y sugerencia."""
+    """Analiza ratios P/E, P/B, P/S, deuda, ingresos y ganancias con interpretación y sugerencia."""
     resultados = []
 
     for ticker in tickers:
@@ -17,18 +17,30 @@ def analizar_ratios_financieros(tickers):
             pe = info.get('trailingPE', np.nan)
             pb = info.get('priceToBook', np.nan)
             ps = info.get('priceToSalesTrailing12Months', np.nan)
+            ingresos = info.get('totalRevenue', np.nan)
+            ganancias = info.get('netIncomeToCommon', np.nan)
+            deuda_total = info.get('totalDebt', np.nan)
+            equity = info.get('totalStockholderEquity', np.nan)
+            deuda_a_equity = deuda_total / equity if (pd.notna(deuda_total) and pd.notna(equity) and equity != 0) else np.nan
 
             pe_interp = interpretar_ratio(pe, 15, 25)
             pb_interp = interpretar_ratio(pb, 1, 3)
             ps_interp = interpretar_ratio(ps, 1, 2)
+            deuda_interp = interpretar_deuda(deuda_a_equity)
 
-            sugerencia = sugerir_accion([pe_interp, pb_interp, ps_interp])
+            sugerencia = sugerir_accion([pe_interp, pb_interp, ps_interp, deuda_interp])
 
             resultados.append({
                 "Ticker": ticker,
                 "P/E": pe, "P/E interpretación": pe_interp,
                 "P/B": pb, "P/B interpretación": pb_interp,
                 "P/S": ps, "P/S interpretación": ps_interp,
+                "Ingresos": ingresos,
+                "Ganancias": ganancias,
+                "Deuda Total": deuda_total,
+                "Equity": equity,
+                "Deuda/Equity": deuda_a_equity,
+                "Deuda interpretación": deuda_interp,
                 "Sugerencia": sugerencia
             })
         except Exception as e:
@@ -37,6 +49,12 @@ def analizar_ratios_financieros(tickers):
                 "P/E": None, "P/E interpretación": f"Error: {e}",
                 "P/B": None, "P/B interpretación": f"Error: {e}",
                 "P/S": None, "P/S interpretación": f"Error: {e}",
+                "Ingresos": None,
+                "Ganancias": None,
+                "Deuda Total": None,
+                "Equity": None,
+                "Deuda/Equity": None,
+                "Deuda interpretación": f"Error: {e}",
                 "Sugerencia": "Error"
             })
 
@@ -51,12 +69,25 @@ def interpretar_ratio(valor, bajo, alto):
         return "Razonable"
     return "Sobrevalorado"
 
+def interpretar_deuda(deuda_a_equity):
+    if pd.isna(deuda_a_equity):
+        return "No disponible"
+    if deuda_a_equity < 0.5:
+        return "Baja deuda"
+    elif deuda_a_equity <= 1:
+        return "Deuda razonable"
+    else:
+        return "Alta deuda"
+
 def sugerir_accion(interps):
-    if all(v == "Infravalorado" for v in interps):
+    # Si alguna interpretación es "Alta deuda" o "Sobrevalorado", sugerir "Evaluar caso a caso"
+    if "Alta deuda" in interps or "Sobrevalorado" in interps:
+        return "Evaluar caso a caso"
+    if all(v == "Infravalorado" or v == "Baja deuda" for v in interps):
         return "Comprar"
-    if all(v == "Sobrevalorado" for v in interps):
+    if all(v == "Sobrevalorado" or v == "Alta deuda" for v in interps):
         return "Vender"
-    if all(v == "Razonable" for v in interps):
+    if all(v == "Razonable" or v == "Deuda razonable" for v in interps):
         return "Mantener"
     return "Evaluar caso a caso"
 
